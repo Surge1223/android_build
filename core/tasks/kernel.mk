@@ -22,12 +22,6 @@ PERL		= perl
 TARGET_KERNEL_SOURCE ?= $(TARGET_AUTO_KDIR)
 KERNEL_SRC := $(TARGET_KERNEL_SOURCE)
 # kernel configuration - mandatory
-# I know VARIANT_DEFCONFIG and SELINUX_DEFCONFIG used to be here but 
-# honestly it would make more sense to just combine Samsungs different configs 
-# for for each device into just one config per device, for example
-# kernel/$(TARGET_ARCH)/configs/$(COMBINED_SELINUX_VARIANT_AND_DEVICE_CONFIG)
-# #nextbestthingisalreadyhere
-# #butnothere
 
 ## Internal variables
 KERNEL_DEFCONFIG := $(TARGET_KERNEL_CONFIG)
@@ -57,6 +51,7 @@ endif
 ifeq ($(KERNEL_DEFCONFIG)$(wildcard $(KERNEL_CONFIG)),)
 $(error Kernel configuration not defined, cannot build kernel)
 else
+    ccache := $(strip $(wildcard $(ccache)))
 ifneq ($(BOARD_KERNEL_IMAGE_NAME),)
   TARGET_PREBUILT_INT_KERNEL_TYPE := $(BOARD_KERNEL_IMAGE_NAME)
 else
@@ -184,12 +179,6 @@ endif
 KERNEL_CROSS_COMPILE := CROSS_COMPILE="$(ccache) $(KERNEL_TOOLCHAIN_PATH)"
 ccache =
 
-define defconfig-mk
-	if [ ! -f "$(KERNEL_CONFIG)" ]; then\
-		echo "copyig '$(TARGET_KERNEL_CONFIG)' to '$(KERNEL_CONFIG)' ";\
-		cat $(KERNEL_SRC)/arch/$(KERNEL_ARCH)/configs/$(TARGET_KERNEL_CONFIG) > $(KERNEL_OUT)/.config;\
-	fi
-endef
 define mv-modules
     mdpath=`find $(KERNEL_MODULES_OUT) -type f -name modules.order`;\
     if [ "$$mdpath" != "" ];then\
@@ -207,8 +196,15 @@ define clean-module-folder
     fi
 endef
 
+
+define defconfig-mk
+   if [ ! -d "$(KERNEL_CONFIG)" ]; then\
+   cp $(KERNEL_SRC)/arch/$(KERNEL_ARCH)/configs/$(TARGET_KERNEL_CONFIG) $(KERNEL_OUT)/.config;\
+    fi
+endef
+
 ifeq ($(HOST_OS),darwin)
-  MAKE_FLAGS += C_INCLUDE_PATH=$(ANDROID_BUILD_TOP)/external/elfutils/0.153/libelf/
+  MAKE_FLAGS += C_INCLUDE_PATH=$(ANDROID_BUILD_TOP)/external/elfutils/libelf/
 endif
 
 ifeq ($(TARGET_KERNEL_MODULES),)
@@ -218,6 +214,8 @@ endif
 $(KERNEL_OUT):
 	mkdir -p $(KERNEL_OUT)
 	mkdir -p $(KERNEL_MODULES_OUT)
+	$(shell export KBUILD_BUILD_USER=root)
+	$(shell export KBUILD_BUILD_HOST=$(TARGET_DEVICE))
 	$(defconfig-mk)
 
 $(KERNEL_CONFIG): $(KERNEL_OUT)
