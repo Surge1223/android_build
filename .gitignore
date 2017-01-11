@@ -3,3 +3,5 @@
 blueprint/
 kati/
 soong/
+*.DS_Store
+*._.DS_Store
