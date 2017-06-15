@@ -552,7 +552,18 @@ ifeq ($(USE_SOONG),true)
 subdir_makefiles := $(SOONG_ANDROID_MK) $(call filter-soong-makefiles,$(subdir_makefiles))
 endif
 
+ifeq ($(VERBOSE_OUPUT),true)
+$(foreach mk, $(subdir_makefiles), \
+  $(info Including Makefile: $(mk)) \
+  $(eval include $(mk)) \
+  $(checking deps of modules from ===> $(mk)) \
+  $(eval LOCAL_MODULE \:=$(mk)) \
+  $(eval LOCAL_DIR \:= $(patsubst %/,%,$(dir $(mk)))) \
+  $(info =======> LOCAL_MODULE =======> $(LOCAL_MODULE)) \
+)
+else
 $(foreach mk, $(subdir_makefiles), $(eval include $(mk)))
+endif
 
 ifdef PDK_FUSION_PLATFORM_ZIP
 # Bring in the PDK platform.zip modules.
