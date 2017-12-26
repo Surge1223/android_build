@@ -1188,16 +1188,26 @@ RECOVERYIMAGE_ID_FILE := $(PRODUCT_OUT)/recovery.id
 # $(3): mount point
 # $(4): staging dir
 # Depmod requires a well-formed kernel version so 0.0 is used as a placeholder.
+
+
+ifeq ($(TARGET_MODULES_DIR),)
+  $(info No output dir for TARGET_DEVICE $(TARGET_DEVICE) modules defined, assuming system)
+  TARGET_MODULES_DIR := system
+else
+  $(info Module output dir for TARGET_DEVICE $(TARGET_DEVICE) assigned to vendor)
+  TARGET_MODULES_DIR := vendor
+endif
+
 define build-image-kernel-modules
-    $(hide) rm -rf $(2)/lib/modules
-    $(hide) mkdir -p $(2)/lib/modules
-    $(hide) cp $(1) $(2)/lib/modules/
+    $(hide) rm -rf $(TARGET_MODULES_DIR)/lib/modules
+    $(hide) mkdir -p $(TARGET_MODULES_DIR)/lib/modules
+    $(hide) cp $(1) $(TARGET_MODULES_DIR)/lib/modules/
     $(hide) rm -rf $(4)
     $(hide) mkdir -p $(4)/lib/modules/0.0/$(3)lib/modules
     $(hide) cp $(1) $(4)/lib/modules/0.0/$(3)lib/modules
     $(hide) $(DEPMOD) -b $(4) 0.0
-    $(hide) sed -e 's/\(.*modules.*\):/\/\1:/g' -e 's/ \([^ ]*modules[^ ]*\)/ \/\1/g' $(4)/lib/modules/0.0/modules.dep > $(2)/lib/modules/modules.dep
-    $(hide) cp $(4)/lib/modules/0.0/modules.alias $(2)/lib/modules
+    $(hide) sed -e 's/\(.*modules.*\):/\/\1:/g' -e 's/ \([^ ]*modules[^ ]*\)/ \/\1/g' $(4)/lib/modules/0.0/modules.dep > $(TARGET_MODULES_DIR)/lib/modules/modules.dep
+    $(hide) cp $(4)/lib/modules/0.0/modules.alias $(TARGET_MODULES_DIR)/lib/modules
 endef
 
 # $(1): output file
